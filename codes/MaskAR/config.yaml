@@ -1,0 +1,59 @@
+model:
+  base_learning_rate: 4.5e-06
+  target: MaskAR.model.Net2NetTransformer
+  params:
+    cond_stage_key: image
+    transformer_config:
+      target: MaskAR.transformer.GPT
+      params:
+        vocab_size: 1024
+        block_size: 268
+        n_unmasked: 64
+        n_layer: 8
+        n_head: 8
+        n_embd: 256
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+    first_stage_config:
+      target: MaskVQ.mask_vqgan.VQModel
+      params:
+        ckpt_path: # To be provided
+        embed_dim: 32
+        n_embed: 1024
+        ddconfig:
+          double_z: False
+          z_channels: 128
+          resolution: 128
+          in_channels: 1
+          out_ch: 1
+          ch: 32
+          ch_mult: [1,1,2,2,4]
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+
+        lossconfig:
+          target: MaskVQ.mask_loss.LabelLoss
+          params:
+            codebook_weight: 1.0
+    cond_stage_config:
+      target: MaskAR.MedSAM_encoder.ImageEncoderViT
+      params:
+        ckpt_path: # To be provided
+
+data:
+  target: MaskVQ.dataloader.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 8
+    train:
+      target: MaskVQ.dataloader.CustomTrain
+      params:
+        root_dir: # To be provided
+        size: 128
+    validation:
+      target: MaskVQ.dataloader.CustomTest
+      params:
+        root_dir: # To be provided
+        size: 128
